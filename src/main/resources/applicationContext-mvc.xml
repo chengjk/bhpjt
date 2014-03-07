@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc
+	    http://www.springframework.org/schema/mvc/spring-mvc-3.1.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+		http://www.springframework.org/schema/context 
+		http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+
+	<context:component-scan base-package="com.supermap.bhpjt"
+		use-default-filters="false">
+		<context:include-filter type="annotation"
+			expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+  <!-- 这两个实例分别在类级别和方法级别处理@RequestMapping注解 -->
+	<!-- mvc:annotation-driven 这个标签，实际上就是注册了下面两个bean -->
+	<!-- <bean class="org.springframework.web.servlet.mvc.annotation.DefaultAnnotationHandlerMapping"/> -->
+	<!-- <bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter"/> -->
+	<mvc:annotation-driven>
+		<mvc:message-converters>
+			<bean class="org.springframework.http.converter.StringHttpMessageConverter">
+				<property name="supportedMediaTypes">
+					<list>
+						<bean class="org.springframework.http.MediaType">
+							<constructor-arg index="0" value="text" />
+							<constructor-arg index="1" value="plain" />
+							<constructor-arg index="2" value="UTF-8" />
+						</bean>
+					</list>
+				</property>
+
+			</bean>
+		</mvc:message-converters>
+	</mvc:annotation-driven>
+	<mvc:resources mapping="/assets/**" location="/assets/" />
+	<mvc:resources mapping="/uploads/**" location="/uploads/" />
+	<mvc:resources mapping="/export/**" location="/export/" />
+
+	<bean id="contentNegotiatingResolver"
+		class="org.springframework.web.servlet.view.ContentNegotiatingViewResolver">
+		<property name="order"
+			value="#{T(org.springframework.core.Ordered).HIGHEST_PRECEDENCE}" />
+		<property name="mediaTypes">
+			<map>
+				<entry key="html" value="text/html" />
+				<entry key="pdf" value="application/pdf" />
+				<entry key="xsl" value="appliaction/vnd.ms-excel" />
+				<entry key="xml" value="appliaction/xml" />
+				<entry key="json" value="application/json" />
+			</map>
+		</property>
+	</bean>
+<!-- 	<bean id="resourceBundleResolver" -->
+<!-- 		class="org.springframework.web.servlet.view.ResourceBundleViewResolver"> -->
+<!-- 		<property name="basename" value="primaryviews" /> -->
+<!-- 		<property name="order" value="#{contentNegotiatingResolver.order+1}"></property> -->
+<!-- 	</bean> -->
+<!-- 	<bean id="secondaryResourceBundleResolver" -->
+<!-- 		class="org.springframework.web.servlet.view.ResourceBundleViewResolver"> -->
+<!-- 		<property name="basename" value="secondaryviews" /> -->
+<!-- 		<property name="order" value="#{resourceBundleResolver.order+1}"></property> -->
+<!-- 	</bean> -->
+<!-- 	<bean id="internalResourceResolver" -->
+<!-- 		class="org.springframework.web.servlet.view.InternalResourceViewResolver"> -->
+<!-- 		<property name="viewClass" -->
+<!-- 			value="org.springframework.web.servlet.view.JstlView" /> -->
+<!-- 		<property name="prefix" value="/WEB-INF/view/" /> -->
+<!-- 		<property name="suffix" value=".jsp" /> -->
+<!-- 		<property name="order" value="#{secondaryResourceBundleResolver.order+1}"></property> -->
+<!-- 	</bean> -->
+
+	<!-- <bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource"> -->
+	<!-- <property name="basename" value="messages"/> -->
+	<!-- </bean> -->
+	<bean id="messageSource"
+		class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		<property name="basename" value="classpath:messages" />
+	</bean>
+
+
+
+	<!-- SpringMVC上传文件时，需要配置MultipartResolver处理器 -->
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver"
+		p:defaultEncoding="UTF-8">
+		<!-- 指定所上传文件的总大小不能超过200KB。注意maxUploadSize属性的限制不是针对单个文件，而是所有文件的容量之和 -->
+		<property name="maxUploadSize" value="200000" />
+	</bean>
+
+	<!-- SpringMVC在超出上传文件限制时，会抛出org.springframework.web.multipart.MaxUploadSizeExceededException -->
+	<!-- 该异常是SpringMVC在检查上传的文件信息时抛出来的，而且此时还没有进入到Controller方法中 -->
+	<bean id="exceptionResolver"
+		class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+		<property name="exceptionMappings">
+			<props>
+				<!-- 遇到MaxUploadSizeExceededException异常时，自动跳转到/WEB-INF/jsp/error_fileupload.jsp页面 -->
+				<prop
+					key="org.springframework.web.multipart.MaxUploadSizeExceededException">error_fileupload</prop>
+			</props>
+		</property>
+	</bean>
+
+
+</beans>

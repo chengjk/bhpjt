@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:context="http://www.springframework.org/schema/context"
+  default-autowire="byName" xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+  xmlns:tx="http://www.springframework.org/schema/tx"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+		http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa-1.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+  
+
+<!-- 引入注解 -->
+<!--   <context:annotation-config /> -->
+  <!-- 设置扫描路径 -->
+  <context:component-scan base-package="com.supermap.bhpjt">
+    <context:exclude-filter type="annotation" 
+      expression="org.springframework.stereotype.Controller" />
+  </context:component-scan>
+  
+  <!-- 引入配置文件 -->
+  <context:property-placeholder location="classpath:settings.properties" />
+  <!-- 设置spring-data-jpa扫描路径 -->
+  <jpa:repositories base-package="com.supermap.bhpjt.dao"></jpa:repositories>
+  <!-- 启用事务注解 -->
+  <tx:annotation-driven transaction-manager="transactionManager" />
+
+
+  <!-- import other xml -->
+  <import resource="applicationContext-mvc.xml" />
+
+  <!-- 定义开发环境的配置 -->
+  <beans profile="development">
+    <!-- 定义实体管理器 -->
+    <bean id="entityManagerFactory"
+      class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+      <property name="persistenceUnitName" value="springjpa"></property>
+      <property name="dataSource" ref="dataSource"></property>
+      <property name="persistenceXmlLocation" value="classpath:META-INF/persistence.xml"></property>
+      <property name="jpaVendorAdapter">
+        <bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter"></bean>
+      </property>
+      <property name="jpaProperties">
+        <props>
+          <prop key="hibernate.dialect">${hibernate.dialect}</prop>
+          <prop key="hibernate.show_sql">${hibernate.show_sql}</prop>
+          <prop key="hibernate.cache.region.factory_class">${cache.factory}</prop>
+          <prop key="net.sf.ehcache.configurationResourceName">ehcache-local.xml</prop>
+          <prop key="hibernate.cache.use_second_level_cache">${second.cache}</prop>
+          <prop key="hibernate.cache.use_query_cache">${query.cache}</prop>
+          <prop key="hibernate.hbm2ddl.auto">update</prop>
+        </props>
+      </property>
+    </bean>
+
+    <!-- 定义数据源，数据源可以使用BoneCP的数据源，或者tomcat jndi数据源 -->
+    <!-- using lazy connection -->
+    <bean id="dataSource"
+      class="org.springframework.jdbc.datasource.LazyConnectionDataSourceProxy">
+      <property name="targetDataSource" ref="mainDataSource"></property>
+    </bean>
+    <!-- BoneCP configuration -->
+    <bean id="mainDataSource" class="com.jolbox.bonecp.BoneCPDataSource"
+      destroy-method="close">
+      <property name="driverClass" value="${jdbc.dev.driver}" />
+      <property name="jdbcUrl" value="${jdbc.dev.url}" />
+      <property name="username" value="${jdbc.dev.username}" />
+      <property name="password" value="${jdbc.dev.password}" />
+      <property name="idleConnectionTestPeriodInMinutes" value="${jdbc.dev.idleConnMin}" />
+      <property name="idleMaxAgeInMinutes" value="${jdbc.dev.idleMaxAgeMin}" />
+      <property name="maxConnectionsPerPartition" value="${jdbc.dev.maxConnPP}" ></property>
+      <property name="minConnectionsPerPartition" value="${jdbc.dev.minConnPP}" />
+      <property name="partitionCount" value="${jdbc.dev.partitionCount}" />
+      <property name="acquireIncrement" value="${jdbc.dev.acquireIncrement}" />
+      <property name="statementsCacheSize" value="${jdbc.dev.statementsCacheSize}" />
+      <property name="releaseHelperThreads" value="${jdbc.dev.releaseHelperThreads}" />
+    </bean>
+
+    <!-- 配置事务管理器 -->
+    <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+      <property name="entityManagerFactory" ref="entityManagerFactory" />
+    </bean>
+    
+    <bean id="jdbcTemplate"  
+        class="org.springframework.jdbc.core.JdbcTemplate">  
+        <property name="dataSource" ref="dataSource" />  
+    </bean>
+
+
+	<!-- freemarker的配置 -->
+	<bean id="freemarkerConfig"
+        class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer">
+        <property name="templateLoaderPath" value="/WEB-INF/template/" />
+        <property name="freemarkerSettings">
+            <props>
+                <prop key="template_update_delay">0</prop>
+                <prop key="default_encoding">UTF-8</prop>
+                <prop key="number_format">0.##########</prop>
+                <prop key="datetime_format">yyyy-MM-dd HH:mm:ss</prop>
+                <prop key="classic_compatible">true</prop>
+                <prop key="template_exception_handler">ignore</prop>
+            </props>
+        </property>
+    </bean>
+	<!-- FreeMarker视图解析 如返回student。。在这里配置后缀名ftl和视图解析器。。 -->
+	<bean id="viewResolver"
+        class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
+        <property name="cache" value="true" />
+        <property name="prefix" value="" />
+        <property name="suffix" value=".htm" />
+        <property name="contentType" value="text/html;charset=UTF-8"></property>
+        <property name="requestContextAttribute" value="request" />
+        <property name="exposeSpringMacroHelpers" value="true" />
+        <property name="exposeRequestAttributes" value="true" />
+        <property name="exposeSessionAttributes" value="true" />
+        <property name="allowSessionOverride" value="true"></property>
+    </bean>
+    <!--   配置异常页面 -->
+	<bean class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+  		<!-- 定义默认的异常处理页面，当该异常类型的注册时使用 -->  
+	    <property name="defaultErrorView" value="error/error"></property>  
+	    <!-- 定义异常处理页面用来获取异常信息的变量名，默认名为exception -->  
+	    <property name="exceptionAttribute" value="ex"></property>  
+	    <!-- 定义需要特殊处理的异常，用类名或完全路径名作为key，异常也页名作为值 -->  
+	    <property name="exceptionMappings">  
+	        <props>  
+	            <prop key="IOException">error/ioexp</prop>  
+	            <prop key="java.sql.SQLException">error/sqlexp</prop> 
+	            <prop key="org.springframework.web.HttpSessionRequiredException">error/user</prop>   
+	        </props>  
+	    </property> 
+ 	</bean>
+    
+    
+  </beans>
+  
+  <!-- 定义生产环境的配置 -->
+  <beans profile="production">
+   <!-- 定义实体管理器 -->
+    <bean id="entityManagerFactory"
+      class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+      <property name="persistenceUnitName" value="springjpa"></property>
+      <property name="dataSource" ref="dataSource"></property>
+      <property name="persistenceXmlLocation" value="classpath:META-INF/persistence.xml"></property>
+      <property name="jpaVendorAdapter">
+        <bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter"></bean>
+      </property>
+      <property name="jpaProperties">
+        <props>
+          <prop key="hibernate.dialect">${hibernate.dialect}</prop>
+          <prop key="hibernate.show_sql">${hibernate.show_sql}</prop>
+          <prop key="hibernate.cache.region.factory_class">${cache.factory}</prop>
+          <prop key="net.sf.ehcache.configurationResourceName">ehcache-local.xml</prop>
+          <prop key="hibernate.cache.use_second_level_cache">${second.cache}</prop>
+          <prop key="hibernate.cache.use_query_cache">${query.cache}</prop>
+          <prop key="hibernate.hbm2ddl.auto">update</prop>
+        </props>
+      </property>
+    </bean>
+
+    <!-- 定义数据源，数据源可以使用BoneCP的数据源，或者tomcat jndi数据源 -->
+    <!-- using lazy connection -->
+    <bean id="dataSource"
+      class="org.springframework.jdbc.datasource.LazyConnectionDataSourceProxy">
+      <property name="targetDataSource" ref="mainDataSource"></property>
+    </bean>
+    <!-- BoneCP configuration -->
+    <bean id="mainDataSource" class="com.jolbox.bonecp.BoneCPDataSource"
+      destroy-method="close">
+      <property name="driverClass" value="${jdbc.pro.driver}" />
+      <property name="jdbcUrl" value="${jdbc.pro.url}" />
+      <property name="username" value="${jdbc.pro.username}" />
+      <property name="password" value="${jdbc.pro.password}" />
+      <property name="idleConnectionTestPeriodInMinutes" value="${jdbc.pro.idleConnMin}" />
+      <property name="idleMaxAgeInMinutes" value="${jdbc.pro.idleMaxAgeMin}" />
+      <property name="maxConnectionsPerPartition" value="${jdbc.pro.maxConnPP}" ></property>
+      <property name="minConnectionsPerPartition" value="${jdbc.pro.minConnPP}" />
+      <property name="partitionCount" value="${jdbc.pro.partitionCount}" />
+      <property name="acquireIncrement" value="${jdbc.pro.acquireIncrement}" />
+      <property name="statementsCacheSize" value="${jdbc.pro.statementsCacheSize}" />
+      <property name="releaseHelperThreads" value="${jdbc.pro.releaseHelperThreads}" />
+    </bean>
+
+    <!-- 配置事务管理器 -->
+    <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+      <property name="entityManagerFactory" ref="entityManagerFactory" />
+    </bean>
+    
+    <bean id="jdbcTemplate"  
+        class="org.springframework.jdbc.core.JdbcTemplate">  
+        <property name="dataSource" ref="dataSource" />  
+    </bean>
+
+
+	<!-- freemarker的配置 -->
+	<bean id="freemarkerConfig"
+        class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer">
+        <property name="templateLoaderPath" value="/WEB-INF/template/" />
+        <property name="freemarkerSettings">
+            <props>
+                <prop key="template_update_delay">0</prop>
+                <prop key="default_encoding">UTF-8</prop>
+                <prop key="number_format">0.##########</prop>
+                <prop key="datetime_format">yyyy-MM-dd HH:mm:ss</prop>
+                <prop key="classic_compatible">true</prop>
+                <prop key="template_exception_handler">ignore</prop>
+            </props>
+        </property>
+    </bean>
+	<!-- FreeMarker视图解析 如返回student。。在这里配置后缀名ftl和视图解析器。。 -->
+	<bean id="viewResolver"
+        class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
+        <property name="cache" value="true" />
+        <property name="prefix" value="" />
+        <property name="suffix" value=".htm" />
+        <property name="contentType" value="text/html;charset=UTF-8"></property>
+        <property name="requestContextAttribute" value="request" />
+        <property name="exposeSpringMacroHelpers" value="true" />
+        <property name="exposeRequestAttributes" value="true" />
+        <property name="exposeSessionAttributes" value="true" />
+        <property name="allowSessionOverride" value="true"></property>
+    </bean>
+    <!--   配置异常页面 -->
+	<bean class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+  		<!-- 定义默认的异常处理页面，当该异常类型的注册时使用 -->  
+	    <property name="defaultErrorView" value="error/error"></property>  
+	    <!-- 定义异常处理页面用来获取异常信息的变量名，默认名为exception -->  
+	    <property name="exceptionAttribute" value="ex"></property>  
+	    <!-- 定义需要特殊处理的异常，用类名或完全路径名作为key，异常也页名作为值 -->  
+	    <property name="exceptionMappings">  
+	        <props>  
+	            <prop key="IOException">error/ioexp</prop>  
+	            <prop key="java.sql.SQLException">error/sqlexp</prop> 
+	            <prop key="org.springframework.web.HttpSessionRequiredException">error/sqlexp</prop>
+	            <prop key="org.springframework.web.HttpSessionRequiredException">error/user</prop>      
+	        </props>  
+	    </property> 
+ 	</bean>
+  </beans>
+</beans>

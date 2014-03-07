@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+  <contextName>bhpjt</contextName>
+  <appender name="STDOUT"
+    class="ch.qos.logback.core.ConsoleAppender">
+    <!-- encoders are assigned by default the type
+         ch.qos.logback.classic.encoder.PatternLayoutEncoder -->
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  
+  <appender name="JDBCFILE" class="ch.qos.logback.core.FileAppender">
+    <file>${catalina.base}/logs/bhpjt/jdbc.log</file>
+    <encoder>
+      <pattern>%date %logger %msg%n</pattern>
+    </encoder>
+  </appender>
+  
+  <appender name="DateFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">   
+      <fileNamePattern>${catalina.base}/logs/bhpjt/bhpjt.%d{yyyy-MM-dd}.log</fileNamePattern>   
+      <maxHistory>30</maxHistory>    
+    </rollingPolicy>   
+    <encoder>   
+      <pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>   
+    </encoder>
+  </appender>
+  
+  <appender name="RollingFile" class="ch.qos.logback.core.rolling.RollingFileAppender">   
+    <file>${catalina.base}/logs/bhpjt/tomcat.log</file>   
+    <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">   
+      <fileNamePattern>${catalina.base}/logs/bhpjt/tomcat.%i.log.zip</fileNamePattern>   
+      <minIndex>1</minIndex>   
+      <maxIndex>3</maxIndex>   
+    </rollingPolicy>   
+    <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">   
+      <maxFileSize>1MB</maxFileSize>   
+    </triggeringPolicy>   
+    <encoder>   
+      <pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>   
+    </encoder>   
+  </appender>   
+           
+  
+  <logger name="jdbc.sqltiming" level="info" additivity="false">
+    <appender-ref ref="JDBCFILE"></appender-ref>
+  </logger>
+  <logger name="com.supermap" level="debug" additivity="false">
+    <appender-ref ref="DateFile"/>
+  </logger>
+  
+  
+  <!-- the level of the root level is set to DEBUG by default. -->
+  <root level="info" >
+    <appender-ref ref="STDOUT"/>
+    <appender-ref ref="RollingFile"/>
+    <appender-ref ref="DateFile"/>
+  </root>
+</configuration>
